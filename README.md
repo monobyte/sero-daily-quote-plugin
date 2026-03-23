@@ -18,7 +18,7 @@ and then hot-loads the plugin into the sidebar.
 Install as a Pi package:
 
 ```bash
-pi install npm:@sero-ai/plugin-daily-quote
+pi install git:https://github.com/monobyte/sero-daily-quote-plugin.git
 ```
 
 The agent gains a `daily_quote` tool (get, set) and a `/quote` command.
