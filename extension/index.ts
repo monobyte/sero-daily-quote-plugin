@@ -15,7 +15,7 @@ import path from 'node:path';
 import { StringEnum } from '@mariozechner/pi-ai';
 import type { ExtensionAPI } from '@mariozechner/pi-coding-agent';
 import { Text } from '@mariozechner/pi-tui';
-import { Type } from '@sinclair/typebox';
+import { Type } from 'typebox';
 
 import type { DailyQuoteState } from '../shared/types';
 import { DEFAULT_STATE } from '../shared/types';
@@ -97,7 +97,7 @@ export default function (pi: ExtensionAPI) {
   pi.on('session_start', async (_event, ctx) => {
     statePath = resolveStatePath(ctx.cwd);
   });
-  pi.on('session_switch', async (_event, ctx) => {
+  pi.on('session_tree', async (_event, ctx) => {
     statePath = resolveStatePath(ctx.cwd);
   });
 
