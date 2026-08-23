@@ -16,6 +16,7 @@ import { StringEnum } from '@earendil-works/pi-ai';
 import type { ExtensionAPI } from '@earendil-works/pi-coding-agent';
 import { Text } from '@earendil-works/pi-tui';
 import { Type } from 'typebox';
+import { withStateLock } from '@sero-ai/extension-runtime';
 
 import type { DailyQuoteState } from '../shared/types';
 import { DEFAULT_STATE } from '../shared/types';
@@ -117,10 +118,10 @@ export default function (pi: ExtensionAPI) {
         };
       }
       statePath = resolvedPath;
-      const state = await readState(statePath);
 
       switch (params.action) {
         case 'get': {
+          const state = await readState(statePath);
           if (!state.quote) {
             return {
               content: [{ type: 'text', text: 'No quote yet. Generate one with action "set".' }],
@@ -137,23 +138,30 @@ export default function (pi: ExtensionAPI) {
         }
 
         case 'set': {
-          if (!params.quote || !params.author) {
+          const { quote, author } = params;
+          if (!quote || !author) {
             return {
               content: [{ type: 'text', text: 'Error: quote and author are required for set' }],
               details: {},
             };
           }
-          state.quote = {
-            text: params.quote,
-            author: params.author,
-            generatedAt: new Date().toISOString(),
-          };
-          state.lastRefreshDate = todayISO();
-          await writeState(statePath, state);
+          // Read+write under the shared `<stateFile>.lock` mutex so this
+          // cannot interleave with the Sero host writing the same file for
+          // the UI (#428).
+          await withStateLock(statePath, async () => {
+            const state = await readState(statePath);
+            state.quote = {
+              text: quote,
+              author,
+              generatedAt: new Date().toISOString(),
+            };
+            state.lastRefreshDate = todayISO();
+            await writeState(statePath, state);
+          });
           return {
             content: [{
               type: 'text',
-              text: `"${params.quote}"\n— ${params.author}`,
+              text: `"${quote}"\n— ${author}`,
             }],
             details: {},
           };
